@@ -1,0 +1,39 @@
+from django.db import models
+from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
+
+
+User = get_user_model()
+
+
+class PostManager(models.Manager):
+    def published(self):
+        return self.filter(public=True)
+
+
+class Post(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_user')
+    title = models.CharField(max_length=300, verbose_name=_('title'))
+    slug = models.CharField(max_length=50, unique=True, verbose_name=_('slug'))
+    description = models.TextField(max_length=2048, verbose_name=_('description'), null=True, blank=True)
+    image = models.ImageField(upload_to='post_image/%y/%m/%d', verbose_name=_('image'), null=True)
+    video = models.FileField(upload_to='video_post/%y/%m/%d', verbose_name=_('video'), null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    public = models.BooleanField(default=True, verbose_name=_('public / private'))
+
+
+    objects = PostManager()
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.title)
+        return super(Post, self).save(*args ,**kwargs)
+
+
+    def __str__(self) -> str:
+        return self.title
+    
+
+    class Meta:
+        ordering = ['-created']
