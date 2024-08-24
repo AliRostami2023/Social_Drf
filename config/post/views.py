@@ -3,9 +3,10 @@ from rest_framework import mixins
 from rest_framework import generics
 from .serializers import *
 from .models import *
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from .permissions import IsAuthorOrReadOnly
 from django.db.models import Q
+
 
 
 class PostListCreateApiView(mixins.CreateModelMixin, mixins.ListModelMixin, GenericViewSet):
@@ -50,4 +51,20 @@ class UpdatePostViewSet(mixins.RetrieveModelMixin,
         if self.request.method in ['PUT', 'PATCH', 'DELETE']:
             return [IsAuthorOrReadOnly()]
         return [AllowAny()]
+
+
+class CommentCreateListApiView(generics.ListCreateAPIView):
+    serializer_class = CommentSerializers
+    queryset = Comment.objects.prefetch_related('parent', 'user', 'post').all()
+    permission_classes = [IsAuthenticated]
+
+
+class CommentDetailUpdateApiView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CommentUpdateSerializers
+    queryset = Comment.objects.all()
     
+
+    def get_permissions(self):
+        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
+            return [IsAuthorOrReadOnly()]
+        return [IsAuthenticated()]

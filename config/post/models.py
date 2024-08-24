@@ -37,3 +37,18 @@ class Post(models.Model):
 
     class Meta:
         ordering = ['-created']
+
+
+class Comment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cuser')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='cpost')
+    body = models.TextField(max_length=1024, verbose_name=_('content'))
+    parent = models.ForeignKey('self', related_name='reply', on_delete=models.CASCADE, null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.user.username} - {self.body[:20]}"
+    
+    class Meta:
+        ordering = ['-created']
