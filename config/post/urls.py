@@ -6,6 +6,8 @@ from rest_framework_nested import routers
 
 router = routers.DefaultRouter()
 router.register('posts', PostListCreateApiView, basename='posts')
+router.register('likes', LikeViewSet, basename='likes')
+
 post_router = routers.NestedDefaultRouter(router, 'posts', lookup='post')
 post_router.register('update', UpdatePostViewSet, basename='post_update')
 

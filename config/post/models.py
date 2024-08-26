@@ -35,8 +35,22 @@ class Post(models.Model):
         return self.title
     
 
+    def get_likes_count(self):
+        return self.post_like.count()
+    
+
     class Meta:
         ordering = ['-created']
+
+
+class LikePost(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_like')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_like')
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return self.user.username
+
 
 
 class Comment(models.Model):
