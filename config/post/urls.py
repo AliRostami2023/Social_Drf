@@ -11,6 +11,8 @@ router.register('likes', LikeViewSet, basename='likes')
 post_router = routers.NestedDefaultRouter(router, 'posts', lookup='post')
 post_router.register('update', UpdatePostViewSet, basename='post_update')
 
+
+app_name = 'home'
 urlpatterns = [
     path('posts/<int:post_id>/comments/', CommentCreateListApiView.as_view()),
     path('posts/<int:post_id>/update-comment/<int:pk>/', CommentDetailUpdateApiView.as_view()),

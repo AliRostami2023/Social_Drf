@@ -18,13 +18,17 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from debug_toolbar.toolbar import debug_toolbar_urls
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
-    path('profile/', include('user_account.urls')),
-    path('', include('post.urls')),
-]
+    path('profile/', include('user_account.urls', namespace='profile')),
+    path('', include('post.urls', namespace='home')),
+    path('', include('follower.urls', namespace='follow')),
+] + debug_toolbar_urls()
+
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

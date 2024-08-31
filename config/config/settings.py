@@ -34,11 +34,13 @@ ALLOWED_HOSTS = []
 LOCAL_APPS = [
     'user_account.apps.UserAccountConfig',
     'post.apps.PostConfig',
+    'follower.apps.FollowerConfig',
 ]
 
 PACK = [
     'rest_framework',
     'djoser',
+    'debug_toolbar',
 ]
 
 
@@ -61,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -161,3 +164,8 @@ DJOSER = {
         'current_user': 'user_account.serializers.UserSerializer',
     }
 }
+
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+]

@@ -9,11 +9,13 @@ from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from .paginations import PostPaginations, CommentPaginations
 
 
 
 class PostListCreateApiView(mixins.CreateModelMixin, mixins.ListModelMixin, GenericViewSet):
     http_method_names = ['get', 'post']
+    pagination_class = PostPaginations
 
 
     def get_queryset(self):
@@ -60,6 +62,7 @@ class CommentCreateListApiView(generics.ListCreateAPIView):
     serializer_class = CommentSerializers
     queryset = Comment.objects.prefetch_related('parent', 'user', 'post').all()
     permission_classes = [IsAuthenticated]
+    pagination_class = CommentPaginations
 
 
 class CommentDetailUpdateApiView(generics.RetrieveUpdateDestroyAPIView):
