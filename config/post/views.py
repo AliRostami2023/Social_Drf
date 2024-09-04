@@ -22,7 +22,7 @@ class PostListCreateApiView(mixins.CreateModelMixin, mixins.ListModelMixin, Gene
         if self.request.user.is_authenticated:
             return Post.objects.select_related('user').filter(
                 Q(user=self.request.user) | Q(public=True))
-        return Post.objects.select_related('user').published()
+        return Post.objects.select_related('user').all()
 
 
     def get_serializer_class(self):

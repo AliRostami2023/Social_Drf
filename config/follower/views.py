@@ -1,9 +1,11 @@
 from rest_framework import viewsets
-from .serializers import FollowerSerializers
+from .serializers import FollowerSerializers, NotificationsSerializers
 from rest_framework import permissions
-from .models import Follower
+from .models import Follower, Notification
 from rest_framework import status
 from rest_framework.response import Response
+from django.core.exceptions import ValidationError
+from .tasks import create_notifications_task
 
 
 class FollowerViewSet(viewsets.ModelViewSet):
@@ -60,3 +62,47 @@ class FollowerViewSet(viewsets.ModelViewSet):
         if self.request.method == 'GET':
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
+
+
+
+class NotificationsViewSet(viewsets.ModelViewSet):
+    queryset = Notification.objects.select_related('recipient', 'sender', 'post').all()
+    serializer_class = NotificationsSerializers
+    permission_classes = [permissions.IsAuthenticated]
+
+
+    def get_queryset(self):
+        return self.queryset.filter(recipient=self.request.user).order_by('-timestamp')
+    
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        sender_id = self.request.user.id
+
+        if instance.notification_type == 'follow':
+            recipient_id = instance.recipient.id
+            message = f"{self.request.user.username} started following you !"
+        
+        elif instance.notification_type == 'comment':
+            if not instance.post:
+                raise ValidationError("Post is required for a 'comment' notification.")
+            recipient_id = instance.post.user.id
+            message = f"{self.request.user.username} commented on your post !"
+
+        elif instance.notification_type == 'like':
+            if not instance.post:
+                raise ValidationError("Post is required for a 'like' notification.")
+            recipient_id = instance.post.user.id
+            message = f"{self.request.user.username} liked your post."
+
+        else:
+            raise ValidationError("Invalid notification type.")
+        
+
+        create_notifications_task.delay(
+            recipient_id = recipient_id,
+            sender_id = sender_id,
+            notification_type = instance.notification_type,
+            post = instance.post.id if instance.post else None,
+            message = message
+        )

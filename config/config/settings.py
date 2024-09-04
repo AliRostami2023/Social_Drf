@@ -40,6 +40,7 @@ LOCAL_APPS = [
 PACK = [
     'rest_framework',
     'djoser',
+    'celery',
     'debug_toolbar',
 ]
 
@@ -169,3 +170,7 @@ DJOSER = {
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
+
+
+# celery settings
+CELERY_BROKER_URL = 'amqp://localhost'
