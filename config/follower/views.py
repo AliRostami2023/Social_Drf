@@ -6,6 +6,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.core.exceptions import ValidationError
 from .tasks import create_notifications_task
+from django.contrib.auth import get_user_model
+
+
+
+User = get_user_model()
 
 
 class FollowerViewSet(viewsets.ModelViewSet):
@@ -43,7 +48,17 @@ class FollowerViewSet(viewsets.ModelViewSet):
             return Response({'error': 'you are already following this user'}, status.HTTP_400_BAD_REQUEST)
         
         Follower.objects.create(follower=follower, followed_id=followed_id)
-        return Response({'status': 'followed'}, status.HTTP_200_OK)
+
+        follower_user = User.objects.get(id=followed_id)
+        if follower_user != request.user:
+            NotificationsViewSet.perform_create(
+                serializer=NotificationsSerializers(data={
+                    'recipient': follower_user.id,
+                    'sender': follower.id,
+                    'notification_type': 'follow',
+                })
+            )
+            return Response({'status': 'followed'}, status.HTTP_200_OK)
     
 
     def destroy(self, request, *args, **kwargs):
@@ -94,6 +109,12 @@ class NotificationsViewSet(viewsets.ModelViewSet):
                 raise ValidationError("Post is required for a 'like' notification.")
             recipient_id = instance.post.user.id
             message = f"{self.request.user.username} liked your post."
+        
+        elif instance.notification_type == 'share':
+            if not instance.post:
+                raise ValidationError('Post is required for a "share" notification.')
+            recipient_id = instance.post.user.id
+            message = f"{self.request.user.username} shared your post."
 
         else:
             raise ValidationError("Invalid notification type.")

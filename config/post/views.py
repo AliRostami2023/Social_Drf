@@ -10,6 +10,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .paginations import PostPaginations, CommentPaginations
+from follower.views import NotificationsViewSet
+from follower.serializers import NotificationsSerializers
 
 
 
@@ -20,9 +22,9 @@ class PostListCreateApiView(mixins.CreateModelMixin, mixins.ListModelMixin, Gene
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            return Post.objects.select_related('user').filter(
+            return Post.objects.select_related('orginal_post', 'user').filter(
                 Q(user=self.request.user) | Q(public=True))
-        return Post.objects.select_related('user').all()
+        return Post.objects.select_related('orginal_post', 'user').all()
 
 
     def get_serializer_class(self):
@@ -65,6 +67,21 @@ class CommentCreateListApiView(generics.ListCreateAPIView):
     pagination_class = CommentPaginations
 
 
+    def perform_create(self, serializer):
+        comment = serializer.save(user=self.request.user)
+
+        post_author = comment.post.user
+        if post_author != self.request.user:
+            NotificationsViewSet.perform_create(
+                serializer=NotificationsSerializers(data={
+                    'recipient': post_author.id,
+                    'sender': self.request.user.id,
+                    'post': comment.post.id,
+                    'notification_type': 'comment',
+                })
+            )
+
+
 class CommentDetailUpdateApiView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CommentUpdateSerializers
     queryset = Comment.objects.all()
@@ -88,7 +105,18 @@ class LikeViewSet(ViewSet):
         if LikePost.objects.filter(user=user, post=post).exists():
             return Response({'detail': 'Already liked'}, status=status.HTTP_400_BAD_REQUEST)
         LikePost.objects.create(user=user, post=post)
-        return Response({'detail': 'Liked'}, status=status.HTTP_201_CREATED)
+
+        post_author = post.user
+        if post_author != user:
+            NotificationsViewSet.perform_create(
+                serializer=NotificationsSerializers(data={
+                    'recipient': post_author.id,
+                    'sender': user.id,
+                    'post': post.id,
+                    'notification_type': 'like',
+                })
+            )
+            return Response({'detail': 'Liked'}, status=status.HTTP_201_CREATED)
 
 
     @action(detail=True, methods=['delete'])
@@ -100,3 +128,38 @@ class LikeViewSet(ViewSet):
             return Response({'detail': 'Not liked'}, status=status.HTTP_400_BAD_REQUEST)
         like.delete()
         return Response({'detail': 'Unliked'}, status=status.HTTP_204_NO_CONTENT)
+
+
+
+class SharedPostApiView(generics.CreateAPIView):
+    serializer_class = PostListSerializers
+    permission_classes = [IsAuthenticated]
+
+
+    def post(self, request, pk):
+        try:
+            orginal_post = Post.objects.get(pk=pk)
+            new_post = Post.objects.create(
+                description=orginal_post.description,
+                user=request.user,
+                title=orginal_post.title,
+                slug=slugify(orginal_post.title, allow_unicode=True),
+                image=orginal_post.image,
+                video=orginal_post.video,
+                orginal_post=orginal_post
+            )
+
+            NotificationsViewSet.perform_create(
+                serializer=NotificationsSerializers(data={
+                    'recipient': orginal_post.user.id,
+                    'sender': request.user.id,
+                    'post': orginal_post.id,
+                    'notification_type': 'share',
+                })
+            )
+
+            serializer=self.serializer_class(new_post)
+            return Response(serializer.data, status.HTTP_201_CREATED)
+        except Post.DoesNotExist:
+            return Response({'error': 'post not found'}, status.HTTP_404_NOT_FOUND)
+        

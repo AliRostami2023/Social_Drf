@@ -22,12 +22,13 @@ class Post(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     public = models.BooleanField(default=True, verbose_name=_('public / private'))
+    orginal_post = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='shared_post')
 
 
     objects = PostManager()
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.title)
+        self.slug = slugify(self.title, allow_unicode=True)
         return super(Post, self).save(*args ,**kwargs)
 
 
@@ -41,6 +42,7 @@ class Post(models.Model):
 
     class Meta:
         ordering = ['-created']
+
 
 
 class LikePost(models.Model):
