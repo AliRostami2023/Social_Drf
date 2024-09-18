@@ -12,26 +12,27 @@ class PostCreateSerializer(serializers.ModelSerializer):
 
 
 
+class RepostSerializers(serializers.ModelSerializer):
+    post_id = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Post
+        fields = ['post_id']
+        read_only_fields = ['id', 'user', 'title','slug', 'description',
+                   'image', 'video', 'created', 'updated',
+                     'public', 'like_count', 'orginal_post']
+
+
+
+
 class PostListSerializers(serializers.ModelSerializer):
-    user = UserSerializer()
-    like_count = serializers.SerializerMethodField()
-    orginal_post = serializers.SerializerMethodField()
+    user = serializers.StringRelatedField()
 
     class Meta:
         model = Post
         fields = ['id', 'user', 'title','slug', 'description',
                    'image', 'video', 'created', 'updated',
-                     'public', 'like_count', 'orginal_post']
-        
-
-    def get_like_count(self, obj):
-        return obj.post_like.count()
-    
-
-    def get_orginal_post(self, obj):
-        if obj.orginal_post:
-            return PostListSerializers(obj.orginal_post).data
-        return None
+                     'public', 'orginal_post', 'is_repost']
 
 
 
@@ -39,11 +40,6 @@ class UpdatePostSerializers(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ['title', 'description', 'video', 'image', 'public']
-    
-    def update(self, instance, validated_data):
-        instance.slug = slugify(validated_data.get('title', instance.title))
-        instance.save()
-        return instance
     
 
 

@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
-from django.utils.text import slugify
+from slugify import slugify
 
 
 User = get_user_model()
@@ -23,20 +23,23 @@ class Post(models.Model):
     updated = models.DateTimeField(auto_now=True)
     public = models.BooleanField(default=True, verbose_name=_('public / private'))
     orginal_post = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='shared_post')
+    is_repost = models.BooleanField(default=False)
 
 
     objects = PostManager()
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.title, allow_unicode=True)
-        return super(Post, self).save(*args ,**kwargs)
+        if not self.slug or (self.pk and Post.objects.get(pk=self.pk).title != self.title):
+            self.slug = slugify(self.title, allow_unicode=True)
+        super().save(*args, **kwargs)
 
 
     def __str__(self) -> str:
         return self.title
     
-
-    def get_likes_count(self):
+    
+    @property
+    def likes_count(self):
         return self.post_like.count()
     
 

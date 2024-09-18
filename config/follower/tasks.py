@@ -21,6 +21,7 @@ def create_notifications_task(recipient_id, sender_id, notification_type, post_i
             post = post,
             message = message
         )
+        return "Notification created successfully"
 
     except User.DoesNotExist:
         pass

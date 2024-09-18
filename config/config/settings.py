@@ -172,5 +172,12 @@ INTERNAL_IPS = [
 ]
 
 
-# celery settings
-CELERY_BROKER_URL = 'amqp://localhost'
+# celery settings :
+
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672/'
+CELERY_RESULT_BACKEND = 'rpc://'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_ALWAYS_EAGER = False
