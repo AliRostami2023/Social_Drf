@@ -1,9 +1,11 @@
 from django.urls import path
-from .views import *
+from . import views
+from rest_framework.routers import DefaultRouter
 
 
-app_name = 'profile'
-urlpatterns = [
-    path('profile-list/', ProfileListApiView.as_view()),
-    path('info-profile/<int:pk>/', ProfileView.as_view()),
-]
+router = DefaultRouter()
+router.register('register', views.UserRagistrationViewSet, basename='register')
+
+
+app_name = 'auth'
+urlpatterns = router.urls

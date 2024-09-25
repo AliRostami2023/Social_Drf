@@ -39,7 +39,6 @@ LOCAL_APPS = [
 
 PACK = [
     'rest_framework',
-    'djoser',
     'celery',
     'debug_toolbar',
 ]
@@ -156,14 +155,6 @@ SIMPLE_JWT = {
    'AUTH_HEADER_TYPES': ('JWT',),
    "ACCESS_TOKEN_LIFETIME": timedelta(days=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=10),
-}
-
-
-DJOSER = {
-    'SERIALIZERS': {
-        'user_create': 'user_account.serializers.UserCreateSerializer',
-        'current_user': 'user_account.serializers.UserSerializer',
-    }
 }
 
 

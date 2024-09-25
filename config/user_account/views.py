@@ -1,17 +1,35 @@
-from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework import status
 from .models import *
 from .serializers import *
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
+from rest_framework import permissions
+from rest_framework import mixins
+from rest_framework import viewsets
+from django.contrib.auth import get_user_model
+from rest_framework.decorators import action
 
 
-class ProfileListApiView(generics.ListAPIView):
-    queryset = ProfileUser.objects.select_related('user').all()
-    serializer_class = ListProfileSerializer
-    Permission_classes = [AllowAny]
+User = get_user_model()
 
 
-class ProfileView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = ProfileUser.objects.select_related('user').all()
-    serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+class UserRagistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = User.objects.all()
+    serializer_class = CresteUserSerializers
+
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Otp sent'}, status.HTTP_201_CREATED)
+        return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+
+    @action(detail=False, methods=['post'], url_path='verify-otp')
+    def verify_otp(self, request):
+        serializer = VerifyCodeSerializers(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'user verified successfully.'}, status.HTTP_200_OK)
+        return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 

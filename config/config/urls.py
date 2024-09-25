@@ -23,9 +23,7 @@ from debug_toolbar.toolbar import debug_toolbar_urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('auth/', include('djoser.urls')),
-    path('auth/', include('djoser.urls.jwt')),
-    path('profile/', include('user_account.urls', namespace='profile')),
+    path('', include('user_account.urls', namespace='auth')),
     path('', include('post.urls', namespace='home')),
     path('', include('follower.urls', namespace='follow')),
 ] + debug_toolbar_urls()

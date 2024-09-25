@@ -1,7 +1,5 @@
 from rest_framework import serializers
 from .models import *
-from django.utils.text import slugify
-from djoser.serializers import UserSerializer
 
 
 
