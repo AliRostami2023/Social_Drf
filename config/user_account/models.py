@@ -3,12 +3,14 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.utils.translation import gettext_lazy as _
 from .managers import UserManager
 from datetime import datetime, timedelta
+import uuid
 
 
 
 class User(AbstractBaseUser):
     phone_number = models.CharField(_('phone number'), max_length=11, unique=True, blank=True)
     username = models.CharField(max_length=120, unique=True, verbose_name=_('username'))
+    email = models.EmailField(max_length=300, unique=True, null=True, blank=True, verbose_name=_('email'))
     date_join = models.DateTimeField(auto_now_add=True, verbose_name=_('date join'))
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
@@ -63,13 +65,25 @@ class OtpCode(models.Model):
             self.delete()
             return True
         return False
+    
+
+
+class PasswordResetToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset')
+    token = models.UUIDField(unique=True, default=uuid.uuid4)
+    created = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+
+    @property
+    def is_valid(self):
+        return datetime.now() > self.created + timedelta(days=2) and not self.is_used
 
 
 
 class ProfileUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile_user', verbose_name=_('user'))
     full_name = models.CharField(max_length=300, verbose_name=_('full name'))
-    email = models.EmailField(max_length=300, unique=True, null=True, blank=True, verbose_name=_('email'))
     avatar = models.ImageField(upload_to='avatar_user/%y/%m/%d', null=True, blank=True, verbose_name=_('avatar user'))
     about_me = models.TextField(max_length=1000, verbose_name=_('about me'), null=True, blank=True)
 

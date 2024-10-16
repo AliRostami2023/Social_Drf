@@ -19,11 +19,15 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from debug_toolbar.toolbar import debug_toolbar_urls
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('user_account.urls', namespace='auth')),
+    path('auth/', include('user_account.urls', namespace='auth')),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('', include('post.urls', namespace='home')),
     path('', include('follower.urls', namespace='follow')),
 ] + debug_toolbar_urls()

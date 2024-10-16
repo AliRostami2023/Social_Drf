@@ -14,7 +14,6 @@ from follower.serializers import NotificationsSerializers
 from uuid import uuid4
 
 
-
 class PostViewSet(ModelViewSet):
     pagination_class = PostPaginations
 

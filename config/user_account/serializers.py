@@ -1,29 +1,22 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import OtpCode
+from .models import OtpCode, PasswordResetToken
 from .random_code import random_code_otp
 from datetime import datetime, timedelta
+from django.urls import reverse_lazy
+from django.core.mail import send_mail
 
 
 User = get_user_model()
 
 
-class CresteUserSerializers(serializers.ModelSerializer):
-    confirm_password = serializers.CharField(required=True, max_length=10)
-
+class CreateUserSerializers(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['phone_number', 'username', 'password', 'confirm_password']
+        fields = ['phone_number', 'username', 'password']
 
-
-    def validate(self, attrs):
-        if attrs['password'] != attrs['confirm_password']:
-            raise serializers.ValidationError('password must be match !')
-        return attrs
-    
 
     def create(self, validated_data):
-        del validated_data['confirm_password']
         user = User.objects.create_user(**validated_data)
 
         expired_date = datetime.now() + timedelta(minutes=2)
@@ -37,8 +30,8 @@ class CresteUserSerializers(serializers.ModelSerializer):
 class VerifyCodeSerializers(serializers.ModelSerializer):
     class Meta:
         model = OtpCode
-        fields = ['code', 'expired_date']
-        read_only_fields = ['user']
+        fields = ['code']
+        read_only_fields = ['user', 'expired_date']
     
 
     def validate(self, attrs):
@@ -64,3 +57,71 @@ class VerifyCodeSerializers(serializers.ModelSerializer):
 
         otp.delete()
         return attrs
+
+
+class PasswordResetRequestSerializers(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+    def validate_email(self, value):
+        try:
+            User.objects.get(email=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError('There are no user with this email !!!')
+        return value
+    
+
+    def create(self, validated_data):
+        user = User.objects.get(email=validated_data['email'])
+        reset_token = PasswordResetToken.objects.create(user=user)
+
+        reset_link = f"{self.context['request'].build_absolute_uri(reverse_lazy('password-reset', kwargs={'token':str(reset_token.token)}))}"
+
+        send_mail(
+            subject= 'password reset request',
+            message= f"click the link to reset password {reset_link}",
+            from_email= 'example@gmail.com',
+            recipient_list= [user.email],
+            fail_silently= False
+        )
+
+        print(reset_link)
+        return reset_token
+
+
+
+class PasswordResetConfirmSerializers(serializers.Serializer):
+    token = serializers.UUIDField()
+    new_password = serializers.CharField(write_only=True)
+    confirm_new_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        password1 = attrs['new_password']
+        password2 = attrs['confirm_new_password']
+
+        if password1 and password1 != password2:
+            raise serializers.ValidationError('passwords must be match !!!')
+        elif len(password1) < 8:
+            raise serializers.ValidationError('password must be more 8 char or numbers !!!')
+        return password1
+
+
+    def validate_token(self, value):
+        try:
+            reset_token = PasswordResetToken.objects.get(is_used=False, token=value)
+        except PasswordResetToken.DoesNotExist:
+            raise serializers.ValidationError('invalid or expired token')
+
+        if not reset_token.is_valid():
+            raise serializers.ValidationError('token has expired')
+        return value
+
+
+    def save(self, **kwargs):
+        reset_token = PasswordResetToken.objects.get(token=self.validated_data['token'])
+        user = reset_token.user
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+        reset_token.is_used = True
+        reset_token.save()
+
