@@ -6,6 +6,7 @@ from rest_framework_nested import routers
 
 router = routers.DefaultRouter()
 router.register('posts', PostViewSet, basename='posts')
+router.register('explore', ExplorePostViewSet, basename='explore')
 
 post_router = routers.NestedDefaultRouter(router, 'posts', lookup='post')
 post_router.register('repost', RepostViewSet, basename='repost')

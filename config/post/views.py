@@ -1,5 +1,4 @@
-from rest_framework.viewsets import ViewSet, ModelViewSet
-from rest_framework import generics
+from rest_framework import viewsets, mixins, generics
 from .serializers import *
 from .models import *
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -12,16 +11,19 @@ from .paginations import PostPaginations, CommentPaginations
 from follower.views import NotificationsViewSet
 from follower.serializers import NotificationsSerializers
 from uuid import uuid4
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 
 
-class PostViewSet(ModelViewSet):
+class PostViewSet(viewsets.ModelViewSet):
     pagination_class = PostPaginations
+
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            return Post.objects.select_related('orginal_post', 'user').filter(
+            return Post.objects.select_related('orginal_post', 'user').prefetch_related('hashtag').filter(
                 Q(user=self.request.user) | Q(public=True))
-        return Post.objects.select_related('orginal_post', 'user')
+        return Post.objects.select_related('orginal_post', 'user').prefetch_related('hashtag')
 
 
     def get_serializer_class(self):
@@ -36,7 +38,16 @@ class PostViewSet(ModelViewSet):
         if self.request.method in ['POST', 'PUT', 'PATCH', 'DELETE']:
             return [IsAuthorOrReadOnly()]
         return [AllowAny()]
+    
 
+
+class ExplorePostViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    queryset = Post.objects.select_related('user', 'orginal_post').prefetch_related('hashtag').order_by('?')
+    serializer_class = ExplorPostSerializers
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ['user__username', 'hashtag']
+
+    
 
 class CommentCreateListApiView(generics.ListCreateAPIView):
     serializer_class = CommentSerializers
@@ -72,7 +83,7 @@ class CommentDetailUpdateApiView(generics.RetrieveUpdateDestroyAPIView):
 
 
 
-class LikeViewSet(ModelViewSet):
+class LikeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = LikePost.objects.select_related('user', 'post')
     serializer_class = LikePostSerializers
@@ -117,7 +128,7 @@ class LikeViewSet(ModelViewSet):
         
 
 
-class RepostViewSet(ModelViewSet):
+class RepostViewSet(viewsets.ModelViewSet):
     serializer_class = RepostSerializers
     queryset = Post.objects.select_related('user', 'orginal_post')
     permission_classes = [IsAuthenticated]

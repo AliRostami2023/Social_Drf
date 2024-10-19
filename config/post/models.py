@@ -7,6 +7,13 @@ from slugify import slugify
 User = get_user_model()
 
 
+class Hashtag(models.Model):
+    name = models.CharField(max_length=500, default="#", verbose_name=_('hashtag name'))
+
+    def __str__(self):
+        return self.name
+
+
 class PostManager(models.Manager):
     def published(self):
         return self.filter(public=True)
@@ -22,9 +29,9 @@ class Post(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     public = models.BooleanField(default=True, verbose_name=_('public / private'))
+    hashtag = models.ManyToManyField(Hashtag, related_name='hashtag_post', verbose_name=_('hashtags'))
     orginal_post = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='shared_post')
     is_repost = models.BooleanField(default=False)
-
 
     objects = PostManager()
 

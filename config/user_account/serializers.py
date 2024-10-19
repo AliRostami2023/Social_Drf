@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import OtpCode, PasswordResetToken
+from .models import OtpCode, PasswordResetToken, ProfileUser
 from .random_code import random_code_otp
 from datetime import datetime, timedelta
 from django.urls import reverse_lazy
@@ -124,4 +124,35 @@ class PasswordResetConfirmSerializers(serializers.Serializer):
         user.save()
         reset_token.is_used = True
         reset_token.save()
+
+
+class ResendCodeSerializers(serializers.Serializer):
+    phone_number = serializers.CharField(required=True, max_length=11)
+
+
+    def validate_phone_number(self, value):
+        try:
+            User.objects.get(phone_number=value)
+        except User.DoesNotExist:
+            raise  serializers.ValidationError("User with this phone number does not exist !")
+        return value
+
+
+    def create(self, validated_data):
+        user = User.objects.get(phone_number=validated_data['phone_number'])
+
+        otp_code = random_code_otp()
+        expire_date = datetime.now() + timedelta(minutes=2)
+
+        OtpCode.objects.update_or_create(user=user, defaults={'code': otp_code, 'expired_date': expire_date})
+
+        print(f"Resend code for {user.phone_number} : {otp_code}")
+        return user
+
+
+
+class ProfileSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = ProfileUser
+        fields = '__all__'
 

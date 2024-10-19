@@ -40,6 +40,7 @@ LOCAL_APPS = [
 PACK = [
     'rest_framework',
     'celery',
+    'django_filters',
     'debug_toolbar',
 ]
 
@@ -148,6 +149,9 @@ AUTH_USER_MODEL = 'user_account.User'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
     ),
 }
 

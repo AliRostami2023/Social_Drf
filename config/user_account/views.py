@@ -5,7 +5,6 @@ from .serializers import *
 from rest_framework import mixins
 from rest_framework import viewsets
 from django.contrib.auth import get_user_model
-from rest_framework.decorators import action
 
 
 User = get_user_model()
@@ -38,6 +37,19 @@ class VerifyCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             serializer.save()
             return Response({'message': 'user verified successfully.'}, status.HTTP_200_OK)
         return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+
+class ResendCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = User.objects.all()
+    serializer_class = ResendCodeSerializers
+
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'message': 'code has been resent.'}, status.HTTP_200_OK)
 
 
 class PasswordResetViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
